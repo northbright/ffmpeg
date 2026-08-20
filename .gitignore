@@ -68,6 +68,8 @@ config.json
 !*.MP3
 !*.m4a
 !*.M4A
+!*.ts
+!*.TS
 
 # Ignore output media file
 output.mp4

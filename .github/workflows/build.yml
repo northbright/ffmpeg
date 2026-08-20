@@ -1,0 +1,46 @@
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions
+
+name: Build
+
+on:
+- push
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+        - windows-latest
+        - macos-latest
+        - ubuntu-latest
+        go:
+        - "1.26"
+
+      fail-fast: false
+    steps:
+    - name: Checkout source codes
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Setup FFmpeg
+    - if: runner.os == 'Linux'
+      run: |
+      sudo apt-get update -q -q
+      sudo apt-get install --yes ffmpeg
+    - if: runner.os == 'macOS'
+      run: brew install ffmpeg
+    - if: runner.os == 'Windows'
+      run: choco install ffmpeg
+    - run: ffmpeg -i input.avi output.mkv
+
+    - name: Build
+      run: go build -v
+
+    - name: Test
+      run: go test -v ./...
