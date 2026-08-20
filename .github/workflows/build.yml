@@ -28,16 +28,22 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
 
-    - name: Setup FFmpeg
-    - if: runner.os == 'Linux'
+    - name: Setup FFmpeg on Linux
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update -q -q
         sudo apt-get install --yes ffmpeg
-    - if: runner.os == 'macOS'
+
+    - name: Setup FFmpeg on macOS
+      if: runner.os == 'macOS'
       run: brew install ffmpeg
-    - if: runner.os == 'Windows'
+
+    - name: Setup FFmpeg on Windows
+      if: runner.os == 'Windows'
       run: choco install ffmpeg
-    - run: ffmpeg -i input.avi output.mkv
+
+    - name: Run FFmpeg
+      run: ffmpeg -i input.avi output.mkv
 
     - name: Build
       run: go build -v
