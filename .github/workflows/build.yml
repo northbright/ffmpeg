@@ -31,8 +31,8 @@ jobs:
     - name: Setup FFmpeg
     - if: runner.os == 'Linux'
       run: |
-      sudo apt-get update -q -q
-      sudo apt-get install --yes ffmpeg
+        sudo apt-get update -q -q
+        sudo apt-get install --yes ffmpeg
     - if: runner.os == 'macOS'
       run: brew install ffmpeg
     - if: runner.os == 'Windows'
