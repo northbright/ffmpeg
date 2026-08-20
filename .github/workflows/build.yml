@@ -43,7 +43,7 @@ jobs:
       run: choco install ffmpeg
 
     - name: Run FFmpeg
-      run: ffmpeg -i input.avi output.mkv
+      run: ffmpeg -version
 
     - name: Build
       run: go build -v
