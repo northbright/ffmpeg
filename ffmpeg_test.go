@@ -8,7 +8,7 @@ import (
 )
 
 func ExampleGetFormat() {
-	f, err := ffmpeg.GetFormat("examples/cat.mkv")
+	f, err := ffmpeg.GetFormat("videos/cat.mkv")
 	if err != nil {
 		log.Printf("GetFormat() error: %v", err)
 		return
@@ -17,11 +17,11 @@ func ExampleGetFormat() {
 	fmt.Printf("format: %v\n", f)
 
 	// Output:
-	// format: &{examples/cat.mkv 4 3146526 9.649000}
+	// format: &{videos/cat.mkv 4 3146526 9.649000}
 }
 
 func ExampleGetVideoStreams() {
-	streams, err := ffmpeg.GetVideoStreams("examples/cat.mkv")
+	streams, err := ffmpeg.GetVideoStreams("videos/cat.mkv")
 	if err != nil {
 		log.Printf("GetVideoStreams() error: %v", err)
 		return
@@ -34,7 +34,7 @@ func ExampleGetVideoStreams() {
 }
 
 func ExampleGetAudioStreams() {
-	streams, err := ffmpeg.GetAudioStreams("examples/cat.mkv")
+	streams, err := ffmpeg.GetAudioStreams("videos/cat.mkv")
 	if err != nil {
 		log.Printf("GetAudioStreams() error: %v", err)
 		return
@@ -47,7 +47,7 @@ func ExampleGetAudioStreams() {
 }
 
 func ExampleGetSubtitleStreams() {
-	streams, err := ffmpeg.GetSubtitleStreams("examples/cat.mkv")
+	streams, err := ffmpeg.GetSubtitleStreams("videos/cat.mkv")
 	if err != nil {
 		log.Printf("GetSubtitleStreams() error: %v", err)
 		return

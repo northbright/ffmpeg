@@ -78,8 +78,5 @@ output.mp4
 !*.srt
 !*.SRT
 
-# Ignore SRT files under examples
-/examples/**/*.srt
-
 # Ignore output in everywhere
 output

@@ -9,9 +9,9 @@ import (
 )
 
 func ExampleSegment() {
-	src := filepath.Join("../examples", "cat.MOV")
+	src := filepath.Join("../videos", "cat.MOV")
 	duration := 4
-	outDir := filepath.Join("../examples", "output")
+	outDir := filepath.Join("../videos", "output")
 
 	output, err := hls.Segment(context.Background(), src, duration, outDir)
 	if err != nil {
@@ -30,10 +30,10 @@ func ExampleConcat() {
 	var tsFiles []string
 
 	for _, f := range s {
-		tsFiles = append(tsFiles, filepath.Join("../examples", "output", f))
+		tsFiles = append(tsFiles, filepath.Join("../videos", "../output", f))
 	}
 
-	dst := filepath.Join("../examples", "output", "cat-concat.MOV")
+	dst := filepath.Join("../videos", "../output", "cat-concat.MOV")
 
 	output, err := hls.Concat(context.Background(), tsFiles, dst, true)
 	if err != nil {
