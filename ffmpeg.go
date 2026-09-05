@@ -6,6 +6,7 @@ import (
 	"os/exec"
 )
 
+// Format represents ffprobe's format.
 type Format struct {
 	Filename   string `json:"filename"`
 	StreamsNum int    `json:"nb_streams"`
@@ -13,12 +14,14 @@ type Format struct {
 	Duration   string `json:"duration"`
 }
 
+// Stream represents ffprobe's stream.
 type Stream struct {
 	Index     int    `json:"index"`
 	CodecName string `json:"codec_name"`
 	CodecType string `json:"codec_type"`
 }
 
+// VideoStream represents ffprobe's video stream.
 type VideoStream struct {
 	Stream
 	Width      int    `json:"width"`
@@ -26,10 +29,12 @@ type VideoStream struct {
 	RFrameRate string `json:"r_frame_rate"`
 }
 
+// Tags represents ffprobe's tags.
 type Tags struct {
 	Language string `json:"language"`
 }
 
+// AudioStream represents ffprobe's audio stream.
 type AudioStream struct {
 	Stream
 	ChannelsNum    int    `json:"channels"`
@@ -37,11 +42,13 @@ type AudioStream struct {
 	Tags           `json:"tags"`
 }
 
+// SubtitleStream represents ffprobe's subtitle stream.
 type SubtitleStream struct {
 	Stream
 	Tags `json:"tags"`
 }
 
+// GetFormat returns the format by running ffprobe on the media file.
 func GetFormat(file string) (*Format, error) {
 	var args []string
 
@@ -66,6 +73,7 @@ func GetFormat(file string) (*Format, error) {
 	return &(d.Format), nil
 }
 
+// GetVideoStreams returns the video streams by running ffprobe on the media file.
 func GetVideoStreams(file string) ([]VideoStream, error) {
 	var args []string
 
@@ -90,6 +98,7 @@ func GetVideoStreams(file string) ([]VideoStream, error) {
 	return d.Streams, nil
 }
 
+// GetAudioStreams returns the audio streams by running ffprobe on the media file.
 func GetAudioStreams(file string) ([]AudioStream, error) {
 	var args []string
 
@@ -114,6 +123,7 @@ func GetAudioStreams(file string) ([]AudioStream, error) {
 	return d.Streams, nil
 }
 
+// GetSubtitleStreams returns the subtitle streams by running ffprobe on the media file.
 func GetSubtitleStreams(file string) ([]SubtitleStream, error) {
 	var args []string
 
