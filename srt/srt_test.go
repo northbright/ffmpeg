@@ -33,10 +33,11 @@ func ExampleAddSoftSubtitle() {
 	ctx := context.Background()
 
 	// Add English subtitle.
-	input := "../videos/cat.MOV"
+	input := "../videos/cat.mp4"
 	output := "../output/cat-eng.mkv"
+	isDefault := true
 
-	out, err := srt.AddSoftSubtitle(ctx, input, f1, "eng", "English", output, true)
+	out, err := srt.AddSoftSubtitle(ctx, input, f1, "eng", "English", isDefault, output, true)
 	if err != nil {
 		log.Printf("str.AddSoftSubtitle() error: %v\noutput:\n%s", err, out)
 		return
@@ -47,8 +48,9 @@ func ExampleAddSoftSubtitle() {
 	// Add Chinese subtitle.
 	input = "../output/cat-eng.mkv"
 	output = "../output/cat-eng-chi.mkv"
+	isDefault = false
 
-	out, err = srt.AddSoftSubtitle(ctx, input, f2, "chi", "Chinese", output, true)
+	out, err = srt.AddSoftSubtitle(ctx, input, f2, "chi", "Chinese", isDefault, output, true)
 	if err != nil {
 		log.Printf("str.AddSoftSubtitle() error: %v\noutput:\n%s", err, out)
 		return

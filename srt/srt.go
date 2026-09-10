@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/northbright/ffmpeg"
 )
 
 // Subtitle represents a subtitle in a SRT file.
@@ -38,10 +40,12 @@ func WriteFile(srtFile string, subtitles []Subtitle) error {
 // srtFile: srt file.
 // lang: three-letter [ISO 639-2 Code](e.g. "eng", "spa", "chi").
 // title: a user-friendly name for the subtitle track selection menu(e.g. "English", "Spanish", "Chinese").
-// output: output file.
+// isDefault: if set the subtitle stream as default.
+// Video players show default subtitle stream automatically.
+// output: output file. The input and output's container(format) should be the same.
 // overwrite: if overwrite if output exists.
 // [ISO 639-2 Code]: https://www.loc.gov/standards/iso639-2/php/code_list.php
-func addSoftSubtitleArgs(input, srtFile, lang, title, output string, overwrite bool) []string {
+func addSoftSubtitleArgs(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) ([]string, error) {
 	var args []string
 
 	if overwrite {
@@ -49,12 +53,26 @@ func addSoftSubtitleArgs(input, srtFile, lang, title, output string, overwrite b
 	}
 
 	args = append(args, "-i", input, "-i", srtFile)
+	args = append(args, "-map", "0", "-map", "1")
 	args = append(args, "-c", "copy")
-	args = append(args, "-metadata:s:s:0", fmt.Sprintf("language=%s", lang))
-	args = append(args, "-metadata:s:s:0", fmt.Sprintf("title=%s", title))
+
+	// Get subtitle stream count.
+	streams, err := ffmpeg.GetSubtitleStreams(input)
+	if err != nil {
+		return nil, fmt.Errorf("ffmpeg.GetSubtitleStreams(%s) error: %v", input, err)
+	}
+	n := len(streams)
+
+	args = append(args, fmt.Sprintf("-metadata:s:s:%d", n), fmt.Sprintf("language=%s", lang))
+	args = append(args, fmt.Sprintf("-metadata:s:s:%d", n), fmt.Sprintf("title=%s", title))
+
+	if isDefault {
+		args = append(args, fmt.Sprintf("-disposition:s:%d", n), "default")
+	}
+
 	args = append(args, output)
 
-	return args
+	return args, nil
 }
 
 // AddSoftSubtitleCommand returns the [os/exec.Cmd] to add a soft subtitle track to a video with ffmpeg.
@@ -62,17 +80,27 @@ func addSoftSubtitleArgs(input, srtFile, lang, title, output string, overwrite b
 // srtFile: srt file.
 // lang: three-letter [ISO 639-2 Code](e.g. "eng", "spa", "chi").
 // title: a user-friendly name for the subtitle track selection menu(e.g. "English", "Spanish", "Chinese").
-// output: output file.
+// isDefault: if set the subtitle stream as default.
+// Video players show default subtitle stream automatically.
+// output: output file. The input and output's container(format) should be the same.
 // overwrite: if overwrite if output exists.
-func AddSoftSubtitleCommand(input, srtFile, lang, title, output string, overwrite bool) *exec.Cmd {
-	args := addSoftSubtitleArgs(input, srtFile, lang, title, output, overwrite)
-	return exec.Command("ffmpeg", args...)
+func AddSoftSubtitleCommand(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (*exec.Cmd, error) {
+	args, err := addSoftSubtitleArgs(input, srtFile, lang, title, isDefault, output, overwrite)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.Command("ffmpeg", args...), nil
 }
 
 // AddSoftSubtitleCommandContext is the context version of [AddSoftSubtitleCommand].
-func AddSoftSubtitleCommandContext(ctx context.Context, input, srtFile, lang, title, output string, overwrite bool) *exec.Cmd {
-	args := addSoftSubtitleArgs(input, srtFile, lang, title, output, overwrite)
-	return exec.Command("ffmpeg", args...)
+func AddSoftSubtitleCommandContext(ctx context.Context, input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (*exec.Cmd, error) {
+	args, err := addSoftSubtitleArgs(input, srtFile, lang, title, isDefault, output, overwrite)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.CommandContext(ctx, "ffmpeg", args...), nil
 }
 
 // AddSoftSubtitle adds a soft subtitle track to a video with ffmpeg.
@@ -81,15 +109,24 @@ func AddSoftSubtitleCommandContext(ctx context.Context, input, srtFile, lang, ti
 // srtFile: srt file.
 // lang: three-letter [ISO 639-2 Code](e.g. "eng", "spa", "chi").
 // title: a user-friendly name for the subtitle track selection menu(e.g. "English", "Spanish", "Chinese").
-// output: output file.
+// isDefault: if set the subtitle stream as default.
+// Video players show default subtitle stream automatically.
+// output: output file. The input and output's container(format) should be the same.
 // overwrite: if overwrite if output exists.
-func AddSoftSubtitle(ctx context.Context, input, srtFile, lang, title, output string, overwrite bool) (string, error) {
-	var cmd *exec.Cmd
+func AddSoftSubtitle(ctx context.Context, input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (string, error) {
+	var (
+		err error
+		cmd *exec.Cmd
+	)
 
 	if ctx == nil {
-		cmd = AddSoftSubtitleCommand(input, srtFile, lang, title, output, overwrite)
+		cmd, err = AddSoftSubtitleCommand(input, srtFile, lang, title, isDefault, output, overwrite)
 	} else {
-		cmd = AddSoftSubtitleCommandContext(ctx, input, srtFile, lang, title, output, overwrite)
+		cmd, err = AddSoftSubtitleCommandContext(ctx, input, srtFile, lang, title, isDefault, output, overwrite)
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("Generate ffmpeg command to add soft subtitle error: %v", err)
 	}
 
 	out, err := cmd.CombinedOutput()
