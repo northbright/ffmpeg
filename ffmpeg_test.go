@@ -30,7 +30,7 @@ func ExampleGetVideoStreams() {
 	fmt.Printf("video streams: %v", streams)
 
 	// Output:
-	// video streams: [{{0 h264 video} 720 1280 30/1}]
+	// video streams: [{{0 h264 video} 720 1280 30/1 {{1} 0 0} {{00:00:09.636000000} Core Media Video Lavc60.31.102 libx264}}]
 }
 
 func ExampleGetAudioStreams() {
@@ -43,7 +43,7 @@ func ExampleGetAudioStreams() {
 	fmt.Printf("audio streams: %v", streams)
 
 	// Output:
-	// audio streams: [{{1 vorbis audio} 1 mono {}}]
+	// audio streams: [{{1 vorbis audio} 1 mono {{1} 0 0 0 0 0} {{00:00:09.649000000} Core Media Audio}}]
 }
 
 func ExampleGetSubtitleStreams() {
@@ -56,5 +56,5 @@ func ExampleGetSubtitleStreams() {
 	fmt.Printf("subtitle streams: %v", streams)
 
 	// Output:
-	// subtitle streams: [{{2 subrip subtitle} {eng}} {{3 subrip subtitle} {chi}}]
+	// subtitle streams: [{{2 subrip subtitle} {{1} 0} {{00:00:08.200000000} eng English}} {{3 subrip subtitle} {{0} 0} {{00:00:08.200000000} chi 中文}}]
 }

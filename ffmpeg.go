@@ -21,31 +21,83 @@ type Stream struct {
 	CodecType string `json:"codec_type"`
 }
 
+// Disposition represents the disposition data of a stream.
+type Disposition struct {
+	Default int `json:"default"`
+}
+
+// VideoDisposition represents the disposition data of a video stream.
+type VideoDisposition struct {
+	Disposition
+	AttachedPic int `json:"attached_pic"`
+	StillImage  int `json:"still_image"`
+}
+
+// AudioDisposition represents the disposition data of an audio stream.
+type AudioDisposition struct {
+	Disposition
+	Dub      int `json:"dub"`
+	Original int `json:"original"`
+	Comment  int `json:"comment"`
+	Lyrics   int `json:"lyrics"`
+	Karaoke  int `json:"karaoke"`
+}
+
+// SubtitleDisposition represents the disposition data of a subtitle stream.
+type SubtitleDisposition struct {
+	Disposition
+	Forced int `json:"forced"`
+}
+
+// Tags represents the tags of a stream.
+type Tags struct {
+	Duration string `json:"DURATION"`
+}
+
+// VideoTags represents the tags of a video stream.
+type VideoTags struct {
+	Tags
+	HandlerName string `json:"HANDLER_NAME"`
+	Encoder     string `json:"ENCODER"`
+}
+
+// AudioTags represents the tags of an audio stream.
+type AudioTags struct {
+	Tags
+	HandlerName string `json:"HANDLER_NAME"`
+}
+
+// SubtitleTags represents the tags of a subtitle stream.
+type SubtitleTags struct {
+	Tags
+	Language string `json:"language"`
+	Title    string `json:"title"`
+}
+
 // VideoStream represents ffprobe's video stream.
 type VideoStream struct {
 	Stream
-	Width      int    `json:"width"`
-	Height     int    `json:"height"`
-	RFrameRate string `json:"r_frame_rate"`
-}
-
-// Tags represents ffprobe's tags.
-type Tags struct {
-	Language string `json:"language"`
+	Width            int    `json:"width"`
+	Height           int    `json:"height"`
+	RFrameRate       string `json:"r_frame_rate"`
+	VideoDisposition `json:"disposition"`
+	VideoTags        `json:"tags"`
 }
 
 // AudioStream represents ffprobe's audio stream.
 type AudioStream struct {
 	Stream
-	ChannelsNum    int    `json:"channels"`
-	ChannelsLayout string `json:"channel_layout"`
-	Tags           `json:"tags"`
+	ChannelsNum      int    `json:"channels"`
+	ChannelsLayout   string `json:"channel_layout"`
+	AudioDisposition `json:"disposition"`
+	AudioTags        `json:"tags"`
 }
 
 // SubtitleStream represents ffprobe's subtitle stream.
 type SubtitleStream struct {
 	Stream
-	Tags `json:"tags"`
+	SubtitleDisposition `json:"disposition"`
+	SubtitleTags        `json:"tags"`
 }
 
 // GetFormat returns the format by running ffprobe on the media file.
