@@ -7,7 +7,7 @@ import (
 	"github.com/northbright/ffmpeg/srt"
 )
 
-func ExampleAddSoftSubtitle() {
+func ExampleAddSoftSub() {
 	subtitles := []srt.Subtitle{
 		srt.Subtitle{"00:00:00,000", "00:00:05,090", "What's mimao's playing?"},
 		srt.Subtitle{"00:00:05,100", "00:00:08,200", "Does he realy like it?"},
@@ -37,26 +37,26 @@ func ExampleAddSoftSubtitle() {
 	output := "../output/cat-eng.mkv"
 	isDefault := true
 
-	out, err := srt.AddSoftSubtitle(ctx, input, f1, "eng", "English", isDefault, output, true)
+	out, err := srt.AddSoftSub(ctx, input, f1, "eng", "English", isDefault, output, true)
 	if err != nil {
-		log.Printf("str.AddSoftSubtitle() error: %v\noutput:\n%s", err, out)
+		log.Printf("str.AddSoftSub() error: %v\noutput:\n%s", err, out)
 		return
 	}
 
-	log.Printf("str.AddSoftSubtitle() OK. output:\n%s", out)
+	log.Printf("str.AddSoftSub() OK. output:\n%s", out)
 
 	// Add Chinese subtitle.
 	input = "../output/cat-eng.mkv"
 	output = "../output/cat-eng-chi.mkv"
 	isDefault = false
 
-	out, err = srt.AddSoftSubtitle(ctx, input, f2, "chi", "Chinese", isDefault, output, true)
+	out, err = srt.AddSoftSub(ctx, input, f2, "chi", "Chinese", isDefault, output, true)
 	if err != nil {
-		log.Printf("str.AddSoftSubtitle() error: %v\noutput:\n%s", err, out)
+		log.Printf("str.AddSoftSub() error: %v\noutput:\n%s", err, out)
 		return
 	}
 
-	log.Printf("str.AddSoftSubtitle() OK. output:\n%s", out)
+	log.Printf("str.AddSoftSub() OK. output:\n%s", out)
 
 	// Output:
 }

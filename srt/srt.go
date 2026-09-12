@@ -35,7 +35,7 @@ func WriteFile(srtFile string, subtitles []Subtitle) error {
 	return nil
 }
 
-// addSoftSubtitleArgs returns the arguments of [os/exec.Cmd] to add a soft subtitle track to a video with ffmpeg.
+// addSoftSubArgs returns the arguments of [os/exec.Cmd] to add a soft subtitle track to a video with ffmpeg.
 // input: input video.
 // srtFile: srt file.
 // lang: three-letter [ISO 639-2 Code](e.g. "eng", "spa", "chi").
@@ -45,7 +45,7 @@ func WriteFile(srtFile string, subtitles []Subtitle) error {
 // output: output file. The input and output's container(format) should be the same.
 // overwrite: if overwrite if output exists.
 // [ISO 639-2 Code]: https://www.loc.gov/standards/iso639-2/php/code_list.php
-func addSoftSubtitleArgs(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) ([]string, error) {
+func addSoftSubArgs(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) ([]string, error) {
 	var args []string
 
 	if overwrite {
@@ -75,7 +75,7 @@ func addSoftSubtitleArgs(input, srtFile, lang, title string, isDefault bool, out
 	return args, nil
 }
 
-// AddSoftSubtitleCommand returns the [os/exec.Cmd] to add a soft subtitle track to a video with ffmpeg.
+// AddSoftSubCommand returns the [os/exec.Cmd] to add a soft subtitle track to a video with ffmpeg.
 // input: input video.
 // srtFile: srt file.
 // lang: three-letter [ISO 639-2 Code](e.g. "eng", "spa", "chi").
@@ -84,8 +84,8 @@ func addSoftSubtitleArgs(input, srtFile, lang, title string, isDefault bool, out
 // Video players show default subtitle stream automatically.
 // output: output file. The input and output's container(format) should be the same.
 // overwrite: if overwrite if output exists.
-func AddSoftSubtitleCommand(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (*exec.Cmd, error) {
-	args, err := addSoftSubtitleArgs(input, srtFile, lang, title, isDefault, output, overwrite)
+func AddSoftSubCommand(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (*exec.Cmd, error) {
+	args, err := addSoftSubArgs(input, srtFile, lang, title, isDefault, output, overwrite)
 	if err != nil {
 		return nil, err
 	}
@@ -93,9 +93,9 @@ func AddSoftSubtitleCommand(input, srtFile, lang, title string, isDefault bool, 
 	return exec.Command("ffmpeg", args...), nil
 }
 
-// AddSoftSubtitleCommandContext is the context version of [AddSoftSubtitleCommand].
-func AddSoftSubtitleCommandContext(ctx context.Context, input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (*exec.Cmd, error) {
-	args, err := addSoftSubtitleArgs(input, srtFile, lang, title, isDefault, output, overwrite)
+// AddSoftSubCommandContext is the context version of [AddSoftSubCommand].
+func AddSoftSubCommandContext(ctx context.Context, input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (*exec.Cmd, error) {
+	args, err := addSoftSubArgs(input, srtFile, lang, title, isDefault, output, overwrite)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func AddSoftSubtitleCommandContext(ctx context.Context, input, srtFile, lang, ti
 	return exec.CommandContext(ctx, "ffmpeg", args...), nil
 }
 
-// AddSoftSubtitle adds a soft subtitle track to a video with ffmpeg.
+// AddSoftSub adds a soft subtitle track to a video with ffmpeg.
 // It returns the output from ffmpeg command.
 // input: input video.
 // srtFile: srt file.
@@ -113,16 +113,16 @@ func AddSoftSubtitleCommandContext(ctx context.Context, input, srtFile, lang, ti
 // Video players show default subtitle stream automatically.
 // output: output file. The input and output's container(format) should be the same.
 // overwrite: if overwrite if output exists.
-func AddSoftSubtitle(ctx context.Context, input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (string, error) {
+func AddSoftSub(ctx context.Context, input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (string, error) {
 	var (
 		err error
 		cmd *exec.Cmd
 	)
 
 	if ctx == nil {
-		cmd, err = AddSoftSubtitleCommand(input, srtFile, lang, title, isDefault, output, overwrite)
+		cmd, err = AddSoftSubCommand(input, srtFile, lang, title, isDefault, output, overwrite)
 	} else {
-		cmd, err = AddSoftSubtitleCommandContext(ctx, input, srtFile, lang, title, isDefault, output, overwrite)
+		cmd, err = AddSoftSubCommandContext(ctx, input, srtFile, lang, title, isDefault, output, overwrite)
 	}
 
 	if err != nil {
