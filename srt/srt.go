@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/northbright/ffmpeg"
 )
@@ -42,7 +44,7 @@ func WriteFile(srtFile string, subtitles []Subtitle) error {
 // title: a user-friendly name for the subtitle track selection menu(e.g. "English", "Spanish", "Chinese").
 // isDefault: if set the subtitle stream as default.
 // Video players show default subtitle stream automatically.
-// output: output file. The input and output's container(format) should be the same.
+// output: output file. Supported containers: MKV, MP4, MOV.
 // overwrite: if overwrite if output exists.
 // [ISO 639-2 Code]: https://www.loc.gov/standards/iso639-2/php/code_list.php
 func addSoftSubArgs(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) ([]string, error) {
@@ -55,6 +57,20 @@ func addSoftSubArgs(input, srtFile, lang, title string, isDefault bool, output s
 	args = append(args, "-i", input, "-i", srtFile)
 	args = append(args, "-map", "0", "-map", "1")
 	args = append(args, "-c", "copy")
+
+	// Check if container is supported.
+	ext := strings.ToLower(filepath.Ext(output))
+	if ext != ".mkv" && ext != ".mp4" && ext != ".mov" {
+		return nil, fmt.Errorf("unsupported container: %s", ext)
+	}
+
+	// Unlike MKV, the MP4 container does not natively support raw SRT text format.
+	// To add subtitles to an MP4 container without re-encoding the video or audio,
+	// convert the SRT subtitle stream to the MP4-compatible Timed Text format(mov_text).
+	// See https://salivity.github.io/ffmpeg/article/how-to-add-srt-to-video-without-encoding-using-ffmpeg
+	if ext == ".mp4" {
+		args = append(args, "-c:s", "mov_text")
+	}
 
 	// Get subtitle stream count.
 	streams, err := ffmpeg.GetSubtitleStreams(input)
@@ -82,7 +98,7 @@ func addSoftSubArgs(input, srtFile, lang, title string, isDefault bool, output s
 // title: a user-friendly name for the subtitle track selection menu(e.g. "English", "Spanish", "Chinese").
 // isDefault: if set the subtitle stream as default.
 // Video players show default subtitle stream automatically.
-// output: output file. The input and output's container(format) should be the same.
+// output: output file. Supported containers: MKV, MP4, MOV.
 // overwrite: if overwrite if output exists.
 func AddSoftSubCommand(input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (*exec.Cmd, error) {
 	args, err := addSoftSubArgs(input, srtFile, lang, title, isDefault, output, overwrite)
@@ -111,7 +127,7 @@ func AddSoftSubCommandContext(ctx context.Context, input, srtFile, lang, title s
 // title: a user-friendly name for the subtitle track selection menu(e.g. "English", "Spanish", "Chinese").
 // isDefault: if set the subtitle stream as default.
 // Video players show default subtitle stream automatically.
-// output: output file. The input and output's container(format) should be the same.
+// output: output file. Supported containers: MKV, MP4, MOV.
 // overwrite: if overwrite if output exists.
 func AddSoftSub(ctx context.Context, input, srtFile, lang, title string, isDefault bool, output string, overwrite bool) (string, error) {
 	var (
