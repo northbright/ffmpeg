@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-const (
+var (
 	// Default c:v for HLS segment.
 	DefaultCV string = "libx264"
 	// Default c:a for HLS segment.
