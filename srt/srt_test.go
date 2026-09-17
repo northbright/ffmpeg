@@ -2,6 +2,7 @@ package srt_test
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/northbright/ffmpeg/srt"
@@ -9,8 +10,8 @@ import (
 
 func ExampleAddSoftSub() {
 	subtitles := []srt.Subtitle{
-		srt.Subtitle{"00:00:00,000", "00:00:05,090", "What's mimao's playing?"},
-		srt.Subtitle{"00:00:05,100", "00:00:08,200", "Does he realy like it?"},
+		srt.Subtitle{"00:00:00,000", "00:00:05,090", "What's mimao playing?"},
+		srt.Subtitle{"00:00:05,100", "00:00:08,200", "Does he really like it?"},
 	}
 
 	f1 := "../output/eng.srt"
@@ -87,4 +88,38 @@ func ExampleAddSoftSub() {
 	log.Printf("str.AddSoftSub() for Chinese OK. output:\n%s", out)
 
 	// Output:
+}
+
+func ExampleHardSub_VideoFilter() {
+	subtitles := []srt.Subtitle{
+		srt.Subtitle{"00:00:00,000", "00:00:05,090", "What's mimao playing?"},
+		srt.Subtitle{"00:00:05,100", "00:00:08,200", "Does he really like it?"},
+	}
+
+	f := "../output/eng.srt"
+	if err := srt.WriteFile(f, subtitles); err != nil {
+		log.Printf("srt.WriteFile(%s) error: %v", f, err)
+		return
+	}
+
+	hs := srt.NewHardSub(
+		f,
+		srt.FontName("Arial"),                  // default: "Arial".
+		srt.FontSize(20),                       // default: 16.
+		srt.PrimaryColour(0xFF, 0xD3, 0x80, 0), // default: white.
+		srt.OutlineColour(0x2C, 0x48, 0x75, 0), // default: black.
+		srt.BackColour(0x00, 0x20, 0x2E, 0),    // default: black.
+		srt.Outline(3),                         // default: 2,
+		srt.Shadow(2),                          // default: 2,
+		srt.Bold(true),                         // default: false.
+		srt.Italic(true),                       // default: false.
+		srt.Alignment(1),                       // default: 2, range: 1 - 9(num keyboard layout).
+		srt.MarginV(30),                        // default: 10.
+	)
+
+	// Get subtitles video filter used in ffmpeg.
+	fmt.Printf("hard sub video filter: %s\n", hs.VideoFilter())
+
+	// Output:
+	// hard sub video filter: subtitles='../output/eng.srt':force_style='Alignment=1,BackColour=&H002e2000,Bold=1,FontName=Arial,FontSize=20,Italic=1,MarginV=30,Outline=3,OutlineColour=&H0075482c,PrimaryColour=&H0080d3ff,Shadow=2'
 }
