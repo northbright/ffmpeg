@@ -110,7 +110,7 @@ func ExampleHardSub_VideoFilter() {
 		srt.OutlineColour(0x2C, 0x48, 0x75, 0), // default: black.
 		srt.BackColour(0x00, 0x20, 0x2E, 0),    // default: black.
 		srt.Outline(3),                         // default: 2,
-		srt.Shadow(2),                          // default: 2,
+		srt.Shadow(2),                          // default: 0,
 		srt.Bold(true),                         // default: false.
 		srt.Italic(true),                       // default: false.
 		srt.Alignment(1),                       // default: 2, range: 1 - 9(num keyboard layout).

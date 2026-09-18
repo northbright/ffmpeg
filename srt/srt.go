@@ -213,7 +213,7 @@ func Outline(thickness uint8) Style {
 }
 
 // Shadow returns the shadow depth style.
-// Default: 2.
+// Default: 0.
 func Shadow(depth uint8) Style {
 	return func(hs *HardSub) {
 		hs.styles["Shadow"] = fmt.Sprintf("%d", depth)
