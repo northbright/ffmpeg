@@ -14,6 +14,13 @@ import (
 	"github.com/northbright/ffmpeg"
 )
 
+var (
+	// Default "-c:v" to re-encoding the video when adding hard subtitles.
+	DefaultCV string = "libx264"
+	// Default "-c:a" to re-encoding the video when adding hard subtitles.
+	DefaultCA string = "copy"
+)
+
 // Subtitle represents a subtitle in a SRT file.
 type Subtitle struct {
 	Start string
@@ -145,7 +152,7 @@ func AddSoftSub(ctx context.Context, input, srtFile, lang, title string, isDefau
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Generate ffmpeg command to add soft subtitle error: %v", err)
+		return "", fmt.Errorf("Generate ffmpeg command to add a soft subtitle stream error: %v", err)
 	}
 
 	out, err := cmd.CombinedOutput()
@@ -263,7 +270,7 @@ func MarginV(margin uint8) Style {
 
 // NewHardSub returns a new HardSub.
 // srtFile: srt file.
-// styles: slice of [Style].
+// styles: one or more subtitle [Style].
 func NewHardSub(srtFile string, styles ...Style) *HardSub {
 	hs := &HardSub{srtFile: srtFile, styles: map[string]string{}}
 
@@ -298,31 +305,84 @@ func (hs *HardSub) VideoFilter() string {
 	return vf
 }
 
-/*
+// addHardSubArgs returns the arguments of [os/exec.Cmd] to add hard-coding subtitles to a video with ffmpeg.
+// input: input video.
+// srtFile: srt file.
+// output: output file. Supported containers: MKV, MP4, MOV.
+// overwrite: if overwrite if output exists.
+// styles: one or more subtitle [Style].
+func addHardSubArgs(input, srtFile, output string, overwrite bool, styles ...Style) ([]string, error) {
+	var args []string
+
+	if overwrite {
+		args = append(args, "-y")
+	}
+
+	args = append(args, "-i", input, "-i", srtFile)
+
+	// Create a HardSub.
+	hs := NewHardSub(srtFile, styles...)
+
+	// Append hard subtitle video filter.
+	args = append(args, "-vf", hs.VideoFilter())
+
+	// Re-encoding the video.
+	args = append(args, "-c:v", DefaultCV)
+	args = append(args, "-c:a", DefaultCA)
+
+	args = append(args, output)
+
+	return args, nil
+}
+
+// AddHardSubCommand returns the [os/exec.Cmd] to add hard-coding subtitles to a video with ffmpeg.
+// input: input video.
+// srtFile: srt file.
+// output: output file. Supported containers: MKV, MP4, MOV.
+// overwrite: if overwrite if output exists.
+// styles: one or more subtitle [Style].
+func AddHardSubCommand(input, srtFile, output string, overwrite bool, styles ...Style) (*exec.Cmd, error) {
+	args, err := addHardSubArgs(input, srtFile, output, overwrite, styles...)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.Command("ffmpeg", args...), nil
+}
+
+// AddHardSubCommandContext is the context version of [AddSoftSubCommand].
+func AddHardSubCommandContext(ctx context.Context, input, srtFile, output string, overwrite bool, styles ...Style) (*exec.Cmd, error) {
+	args, err := addHardSubArgs(input, srtFile, output, overwrite, styles...)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.CommandContext(ctx, "ffmpeg", args...), nil
+}
+
 // AddHardSub adds hard coding subtitle to a video with ffmpeg.
 // It returns the output from ffmpeg command.
 // input: input video.
 // srtFile: srt file.
-// params:
 // output: output file.
 // overwrite: if overwrite if output exists.
-func AddHardSub(ctx context.Context, input, srtFile string, params map[string]string, overwrite bool) (string, error) {
+// styles: one or more subtitle [Style].
+func AddHardSub(ctx context.Context, input, srtFile, output string, overwrite bool, styles ...Style) (string, error) {
 	var (
 		err error
 		cmd *exec.Cmd
 	)
 
 	if ctx == nil {
-		cmd, err = AddSoftSubCommand(input, srtFile, lang, title, isDefault, output, overwrite)
+		cmd, err = AddHardSubCommand(input, srtFile, output, overwrite, styles...)
 	} else {
-		cmd, err = AddSoftSubCommandContext(ctx, input, srtFile, lang, title, isDefault, output, overwrite)
+		cmd, err = AddHardSubCommandContext(ctx, input, srtFile, output, overwrite, styles...)
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Generate ffmpeg command to add soft subtitle error: %v", err)
+		return "", fmt.Errorf("Generate ffmpeg command to add hard subtitles error: %v", err)
 	}
 
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
-*/
