@@ -41,11 +41,11 @@ func ExampleAddSoftSub() {
 
 	out, err := srt.AddSoftSub(ctx, input, f1, "eng", "English", isDefault, output, true)
 	if err != nil {
-		log.Printf("str.AddSoftSub() for English error: %v\noutput:\n%s", err, out)
+		log.Printf("srt.AddSoftSub() for English error: %v\noutput:\n%s", err, out)
 		return
 	}
 
-	log.Printf("str.AddSoftSub() for English OK. output:\n%s", out)
+	log.Printf("srt.AddSoftSub() for English OK. output:\n%s", out)
 
 	// Add Chinese subtitle.
 	input = "../output/cat-eng.mkv"
@@ -54,11 +54,11 @@ func ExampleAddSoftSub() {
 
 	out, err = srt.AddSoftSub(ctx, input, f2, "chi", "Chinese", isDefault, output, true)
 	if err != nil {
-		log.Printf("str.AddSoftSub() for Chinese error: %v\noutput:\n%s", err, out)
+		log.Printf("srt.AddSoftSub() for Chinese error: %v\noutput:\n%s", err, out)
 		return
 	}
 
-	log.Printf("str.AddSoftSub() for Chinese OK. output:\n%s", out)
+	log.Printf("srt.AddSoftSub() for Chinese OK. output:\n%s", out)
 
 	// Output MP4.
 	// Add English subtitle.
@@ -68,11 +68,11 @@ func ExampleAddSoftSub() {
 
 	out, err = srt.AddSoftSub(ctx, input, f1, "eng", "English", isDefault, output, true)
 	if err != nil {
-		log.Printf("str.AddSoftSub() for English error: %v\noutput:\n%s", err, out)
+		log.Printf("srt.AddSoftSub() for English error: %v\noutput:\n%s", err, out)
 		return
 	}
 
-	log.Printf("str.AddSoftSub() for English OK. output:\n%s", out)
+	log.Printf("srt.AddSoftSub() for English OK. output:\n%s", out)
 
 	// Add Chinese subtitle.
 	input = "../output/cat-eng.mp4"
@@ -81,11 +81,23 @@ func ExampleAddSoftSub() {
 
 	out, err = srt.AddSoftSub(ctx, input, f2, "chi", "Chinese", isDefault, output, true)
 	if err != nil {
-		log.Printf("str.AddSoftSub() for Chinese error: %v\noutput:\n%s", err, out)
+		log.Printf("srt.AddSoftSub() for Chinese error: %v\noutput:\n%s", err, out)
 		return
 	}
 
-	log.Printf("str.AddSoftSub() for Chinese OK. output:\n%s", out)
+	log.Printf("srt.AddSoftSub() for Chinese OK. output:\n%s", out)
+
+	// Set Chinese as the default subtitle stream.
+	input = "../output/cat-eng-chi.mkv"
+	output = "../output/cat-eng-chi-new.mkv"
+	id := 1 // s:1 is Chinese subtitle stream.
+	out, err = srt.SetDefaultSub(ctx, input, id, output, true)
+	if err != nil {
+		log.Printf("srt.SetDefaultSub(): set Chinese as default error: %v\noutput:\n%s", err, out)
+		return
+	}
+
+	log.Printf("srt.SetDefaultSub(): set Chinese as default OK. output:\n%s", out)
 
 	// Output:
 }
@@ -158,11 +170,11 @@ func ExampleAddHardSub() {
 	)
 
 	if err != nil {
-		log.Printf("str.AddHardSub() for Chinese error: %v\noutput:\n%s", err, out)
+		log.Printf("srt.AddHardSub() for Chinese error: %v\noutput:\n%s", err, out)
 		return
 	}
 
-	log.Printf("str.AddHardSub() for Chinese OK. output:\n%s", out)
+	log.Printf("srt.AddHardSub() for Chinese OK. output:\n%s", out)
 
 	// Output:
 }

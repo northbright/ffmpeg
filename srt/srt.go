@@ -3,6 +3,7 @@ package srt
 import (
 	"context"
 	"fmt"
+	"log"
 	"maps"
 	"os"
 	"os/exec"
@@ -131,6 +132,7 @@ func AddSoftSubCommandContext(ctx context.Context, input, srtFile, lang, title s
 
 // AddSoftSub adds a soft subtitle track to a video with ffmpeg.
 // It returns the output from ffmpeg command.
+// ctx: context used to interrupt the process.
 // input: input video.
 // srtFile: srt file.
 // lang: three-letter [ISO 639-2 Code](e.g. "eng", "spa", "chi").
@@ -154,6 +156,103 @@ func AddSoftSub(ctx context.Context, input, srtFile, lang, title string, isDefau
 	if err != nil {
 		return "", fmt.Errorf("Generate ffmpeg command to add a soft subtitle stream error: %v", err)
 	}
+
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
+// setDefaultSubArgs returns the arguments of [os/exec.Cmd] to set the default soft subtitle stream in a video with ffmpeg.
+// It also unsets the previous default subtitle stream.
+// input: input video.
+// id: subtitle stream index(0-based).
+// output: output file.
+// overwrite: if overwrite if output exists.
+func setDefaultSubArgs(input string, id int, output string, overwrite bool) ([]string, error) {
+	var args []string
+
+	if overwrite {
+		args = append(args, "-y")
+	}
+
+	args = append(args, "-i", input)
+	args = append(args, "-map", "0")
+	args = append(args, "-c", "copy")
+
+	// Get subtitle stream count.
+	streams, err := ffmpeg.GetSubtitleStreams(input)
+	if err != nil {
+		return nil, fmt.Errorf("ffmpeg.GetSubtitleStreams(%s) error: %v", input, err)
+	}
+	n := len(streams)
+
+	if id < 0 || id >= n {
+		return nil, fmt.Errorf("invalid id: %d. Should be: %d - %d", id, 0, n-1)
+	}
+
+	for i := 0; i < n; i++ {
+		if i == id {
+			args = append(args, fmt.Sprintf("-disposition:s:%d", i), "default")
+		} else {
+			// Unset other subtitle stream as default.
+			args = append(args, fmt.Sprintf("-disposition:s:%d", i), "none")
+		}
+	}
+
+	args = append(args, output)
+
+	return args, nil
+}
+
+// SetDefaultSubCommand returns the [os/exec.Cmd] to set the default soft subtitle stream in a video with ffmpeg.
+// It also unsets the previous default subtitle stream.
+// input: input video.
+// id: subtitle stream index(0-based).
+// output: output file.
+// overwrite: if overwrite if output exists.
+func SetDefaultSubCommand(input string, id int, output string, overwrite bool) (*exec.Cmd, error) {
+	args, err := setDefaultSubArgs(input, id, output, overwrite)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.Command("ffmpeg", args...), nil
+}
+
+// SetDefaultSubCommandContext is the context version of [SetDefaultSubCommand].
+func SetDefaultSubCommandContext(ctx context.Context, input string, id int, output string, overwrite bool) (*exec.Cmd, error) {
+	args, err := setDefaultSubArgs(input, id, output, overwrite)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.CommandContext(ctx, "ffmpeg", args...), nil
+}
+
+// SetDefaultSub sets the default soft subtitle stream in a video with ffmpeg.
+// It also unsets the previous default subtitle stream.
+// It returns the output from ffmpeg command.
+// ctx: context used to interrupt the process.
+// input: input video.
+// id: subtitle stream index(0-based).
+// output: output file.
+// overwrite: if overwrite if output exists.
+func SetDefaultSub(ctx context.Context, input string, id int, output string, overwrite bool) (string, error) {
+	var (
+		err error
+		cmd *exec.Cmd
+	)
+
+	if ctx == nil {
+		cmd, err = SetDefaultSubCommand(input, id, output, overwrite)
+	} else {
+		cmd, err = SetDefaultSubCommandContext(ctx, input, id, output, overwrite)
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("Generate ffmpeg command to set default subtitle stream error: %v", err)
+	}
+
+	log.Printf("SetDefaultSub() ffmpeg command:\n%s\n", cmd.String())
 
 	out, err := cmd.CombinedOutput()
 	return string(out), err
@@ -350,7 +449,7 @@ func AddHardSubCommand(input, srtFile, output string, overwrite bool, styles ...
 	return exec.Command("ffmpeg", args...), nil
 }
 
-// AddHardSubCommandContext is the context version of [AddSoftSubCommand].
+// AddHardSubCommandContext is the context version of [AddHardSubCommand].
 func AddHardSubCommandContext(ctx context.Context, input, srtFile, output string, overwrite bool, styles ...Style) (*exec.Cmd, error) {
 	args, err := addHardSubArgs(input, srtFile, output, overwrite, styles...)
 	if err != nil {
@@ -360,8 +459,9 @@ func AddHardSubCommandContext(ctx context.Context, input, srtFile, output string
 	return exec.CommandContext(ctx, "ffmpeg", args...), nil
 }
 
-// AddHardSub adds hard coding subtitle to a video with ffmpeg.
+// AddHardSub adds hard-coding subtitles to a video with ffmpeg.
 // It returns the output from ffmpeg command.
+// ctx: context used to interrupt the process.
 // input: input video.
 // srtFile: srt file.
 // output: output file.
