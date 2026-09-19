@@ -164,3 +164,59 @@ func GetSubtitleStreams(file string) ([]SubtitleStream, error) {
 
 	return d.Streams, nil
 }
+
+// MajorBrand returns "major_brand" by running ffprobe.
+// "major_brand" may not exist in format tags.
+func MajorBrand(file string) (string, error) {
+	// Get format.
+	f, err := GetFormat(file)
+	if err != nil {
+		return "", fmt.Errorf("get format info error: %v", err)
+	}
+
+	if len(f.Tags) == 0 {
+		return "", nil
+	}
+
+	majorBrand, ok := f.Tags["major_brand"]
+	if !ok {
+		return "", nil
+	}
+
+	return majorBrand, nil
+}
+
+// IsImage returns if a file is image by running ffprobe.
+func IsImage(file string) (bool, error) {
+	// Get v:0 stream.
+	streams, err := GetVideoStreams(file)
+	if err != nil {
+		return false, fmt.Errorf("get video streams error: %v", err)
+	}
+
+	if len(streams) == 0 {
+		return false, fmt.Errorf("no video stream")
+	}
+
+	switch streams[0].CodecName {
+	case "mjpeg", "png", "bmp", "tiff", "webp", "jpegxl":
+		return true, nil
+
+	case "av1":
+		majorBrand, err := MajorBrand(file)
+		if err != nil {
+			return false, fmt.Errorf("get major_brand error: %v", err)
+		}
+		return majorBrand == "avif", nil
+
+	case "hevc":
+		majorBrand, err := MajorBrand(file)
+		if err != nil {
+			return false, fmt.Errorf("get major_brand error: %v", err)
+		}
+		return majorBrand == "heic" || majorBrand == "heif" || majorBrand == "mif1", nil
+
+	default:
+		return false, nil
+	}
+}

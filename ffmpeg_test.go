@@ -83,3 +83,39 @@ func ExampleGetSubtitleStreams() {
 	// Output:
 	// subtitle streams: [{{2 subrip subtitle} {{1} 0} {eng English}} {{3 subrip subtitle} {{0} 0} {chi Chinese}}]
 }
+
+func ExampleIsImage() {
+	files := []string{
+		"images/cat.jpg",
+		"images/cat.png",
+		"images/cat.bmp",
+		"images/cat.tiff",
+		"images/cat.webp",
+		"images/cat.jxl", // JPEGXL
+		"images/cat.avif",
+		"images/cat.heic",
+		"videos/cat.mkv",
+		"videos/cat.mp4",
+	}
+
+	for _, f := range files {
+		b, err := ffmpeg.IsImage(f)
+		if err != nil {
+			log.Printf("IsImage(%s) error: %v", f, err)
+			return
+		}
+		fmt.Printf("%s --> %v\n", f, b)
+	}
+
+	// Output:
+	// images/cat.jpg --> true
+	// images/cat.png --> true
+	// images/cat.bmp --> true
+	// images/cat.tiff --> true
+	// images/cat.webp --> true
+	// images/cat.jxl --> true
+	// images/cat.avif --> true
+	// images/cat.heic --> true
+	// videos/cat.mkv --> false
+	// videos/cat.mp4 --> false
+}

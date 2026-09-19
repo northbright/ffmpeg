@@ -71,6 +71,26 @@ config.json
 !*.ts
 !*.TS
 
+# Images
+!*.jpg
+!*.JPG
+!*.jpeg
+!*.JPEG
+!*.png
+!*.PNG
+!*.bmp
+!*.BMP
+!*.tiff
+!*.TIFF
+!*.webp
+!*.WEBP
+!*.jxl
+!*.JXL
+!*.avif
+!*.AVIF
+!*.heic
+!*.HEIC
+
 # Ignore output media file
 output.mp4
 
