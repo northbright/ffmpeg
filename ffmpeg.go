@@ -90,8 +90,8 @@ func Format(file string) (*MediaFormat, error) {
 	return &(d.MediaFormat), nil
 }
 
-// GetVideoStreams returns the video streams by running ffprobe on the media file.
-func GetVideoStreams(file string) ([]VideoStream, error) {
+// VideoStreams returns the video streams by running ffprobe on the media file.
+func VideoStreams(file string) ([]VideoStream, error) {
 	var args []string
 
 	args = append(args, "-v", "error", "-select_streams", "v", "-show_entries", "stream", "-of", "json", file)
@@ -115,8 +115,8 @@ func GetVideoStreams(file string) ([]VideoStream, error) {
 	return d.Streams, nil
 }
 
-// GetAudioStreams returns the audio streams by running ffprobe on the media file.
-func GetAudioStreams(file string) ([]AudioStream, error) {
+// AudioStreams returns the audio streams by running ffprobe on the media file.
+func AudioStreams(file string) ([]AudioStream, error) {
 	var args []string
 
 	args = append(args, "-v", "error", "-select_streams", "a", "-show_entries", "stream", "-of", "json", file)
@@ -140,8 +140,8 @@ func GetAudioStreams(file string) ([]AudioStream, error) {
 	return d.Streams, nil
 }
 
-// GetSubtitleStreams returns the subtitle streams by running ffprobe on the media file.
-func GetSubtitleStreams(file string) ([]SubtitleStream, error) {
+// SubtitleStreams returns the subtitle streams by running ffprobe on the media file.
+func SubtitleStreams(file string) ([]SubtitleStream, error) {
 	var args []string
 
 	args = append(args, "-v", "error", "-select_streams", "s", "-show_entries", "stream", "-of", "json", file)
@@ -189,7 +189,7 @@ func MajorBrand(file string) (string, error) {
 // IsImage returns if a file is image by running ffprobe.
 func IsImage(file string) (bool, error) {
 	// Get v:0 stream.
-	streams, err := GetVideoStreams(file)
+	streams, err := VideoStreams(file)
 	if err != nil {
 		return false, fmt.Errorf("get video streams error: %v", err)
 	}

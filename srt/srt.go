@@ -84,9 +84,9 @@ func addSoftSubArgs(input, srtFile, lang, title string, isDefault bool, output s
 	}
 
 	// Get subtitle stream count.
-	streams, err := ffmpeg.GetSubtitleStreams(input)
+	streams, err := ffmpeg.SubtitleStreams(input)
 	if err != nil {
-		return nil, fmt.Errorf("ffmpeg.GetSubtitleStreams(%s) error: %v", input, err)
+		return nil, fmt.Errorf("ffmpeg.SubtitleStreams(%s) error: %v", input, err)
 	}
 	n := len(streams)
 
@@ -179,9 +179,9 @@ func setDefaultSubArgs(input string, id int, output string, overwrite bool) ([]s
 	args = append(args, "-c", "copy")
 
 	// Get subtitle stream count.
-	streams, err := ffmpeg.GetSubtitleStreams(input)
+	streams, err := ffmpeg.SubtitleStreams(input)
 	if err != nil {
-		return nil, fmt.Errorf("ffmpeg.GetSubtitleStreams(%s) error: %v", input, err)
+		return nil, fmt.Errorf("ffmpeg.SubtitleStreams(%s) error: %v", input, err)
 	}
 	n := len(streams)
 

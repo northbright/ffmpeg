@@ -45,10 +45,10 @@ func ExampleFormat() {
 	// MINOR_VERSION: 512
 }
 
-func ExampleGetVideoStreams() {
-	streams, err := ffmpeg.GetVideoStreams("videos/cat-subtitled.mkv")
+func ExampleVideoStreams() {
+	streams, err := ffmpeg.VideoStreams("videos/cat-subtitled.mkv")
 	if err != nil {
-		log.Printf("GetVideoStreams() error: %v", err)
+		log.Printf("VideoStreams() error: %v", err)
 		return
 	}
 
@@ -58,10 +58,10 @@ func ExampleGetVideoStreams() {
 	// video streams: [{{0 h264 video} 720 1280 30/1  {1}}]
 }
 
-func ExampleGetAudioStreams() {
-	streams, err := ffmpeg.GetAudioStreams("videos/cat-subtitled.mkv")
+func ExampleAudioStreams() {
+	streams, err := ffmpeg.AudioStreams("videos/cat-subtitled.mkv")
 	if err != nil {
-		log.Printf("GetAudioStreams() error: %v", err)
+		log.Printf("AudioStreams() error: %v", err)
 		return
 	}
 
@@ -71,10 +71,10 @@ func ExampleGetAudioStreams() {
 	// audio streams: [{{1 aac audio} 1 mono  {1}}]
 }
 
-func ExampleGetSubtitleStreams() {
-	streams, err := ffmpeg.GetSubtitleStreams("videos/cat-subtitled.mkv")
+func ExampleSubtitleStreams() {
+	streams, err := ffmpeg.SubtitleStreams("videos/cat-subtitled.mkv")
 	if err != nil {
-		log.Printf("GetSubtitleStreams() error: %v", err)
+		log.Printf("SubtitleStreams() error: %v", err)
 		return
 	}
 
