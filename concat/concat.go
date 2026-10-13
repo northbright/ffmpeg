@@ -1,5 +1,6 @@
 package concat
 
+/*
 type Clip struct {
 	Start           string
 	End             string
@@ -17,3 +18,4 @@ type SingleImageClip struct {
 	file string
 	clip
 }
+*/
