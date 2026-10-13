@@ -9,10 +9,10 @@ import (
 	"github.com/northbright/ffmpeg"
 )
 
-func ExampleGetFormat() {
-	f, err := ffmpeg.GetFormat("videos/cat-subtitled.mkv")
+func ExampleFormat() {
+	f, err := ffmpeg.Format("videos/cat-subtitled.mkv")
 	if err != nil {
-		log.Printf("GetFormat() error: %v", err)
+		log.Printf("Format() error: %v", err)
 		return
 	}
 

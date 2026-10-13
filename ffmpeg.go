@@ -6,8 +6,8 @@ import (
 	"os/exec"
 )
 
-// Format represents ffprobe's format.
-type Format struct {
+// MediaFormat represents ffprobe's format.
+type MediaFormat struct {
 	Filename   string            `json:"filename"`
 	StreamsNum int               `json:"nb_streams"`
 	Size       string            `json:"size"`
@@ -65,8 +65,8 @@ type SubtitleStream struct {
 	SubtitleTags        `json:"tags"`
 }
 
-// GetFormat returns the format by running ffprobe on the media file.
-func GetFormat(file string) (*Format, error) {
+// Format returns the media format by running ffprobe on the media file.
+func Format(file string) (*MediaFormat, error) {
 	var args []string
 
 	args = append(args, "-v", "error", "-show_entries", "format", "-of", "json", file)
@@ -78,7 +78,7 @@ func GetFormat(file string) (*Format, error) {
 	}
 
 	type _data struct {
-		Format `json:"format"`
+		MediaFormat `json:"format"`
 	}
 
 	var d _data
@@ -87,7 +87,7 @@ func GetFormat(file string) (*Format, error) {
 		return nil, fmt.Errorf("json.Unmarshal on ffprobe output(%s) error: %s", string(output), err)
 	}
 
-	return &(d.Format), nil
+	return &(d.MediaFormat), nil
 }
 
 // GetVideoStreams returns the video streams by running ffprobe on the media file.
@@ -169,7 +169,7 @@ func GetSubtitleStreams(file string) ([]SubtitleStream, error) {
 // "major_brand" may not exist in format tags.
 func MajorBrand(file string) (string, error) {
 	// Get format.
-	f, err := GetFormat(file)
+	f, err := Format(file)
 	if err != nil {
 		return "", fmt.Errorf("get format info error: %v", err)
 	}
