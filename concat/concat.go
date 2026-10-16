@@ -12,8 +12,7 @@ import (
 	"github.com/northbright/timestamp"
 )
 
-type Clip struct {
-	inputID          int
+type ClipData struct {
 	File             string `json:"file"`
 	Start            string `json:"start"`
 	End              string `json:"end"`
@@ -25,24 +24,64 @@ type Clip struct {
 	AFadeOutDuration int    `json:"afade_out_duration,omitempty"`
 }
 
-func ConcatCommand(clips []Clip, output string, w, h, fps int, isRankMode bool) (*exec.Cmd, error) {
-	/*
-		inputs := append(inputs, clips...)
+type Clip struct {
+	inputID     int
+	isFromImage bool
+	duration    *timestamp.Timestamp
+	ClipData
+}
 
-		for id, input := range clips {
-			clips[i].inputID = i
+func NewClip(inputID int, d ClipData) (*Clip, error) {
+	var (
+		err        error
+		start, end *timestamp.Timestamp
+	)
+
+	c := &Clip{inputID: inputID, ClipData: d}
+
+	// Check if clip is from image.
+	if c.isFromImage, err = ffmpeg.IsImage(c.File); err != nil {
+		return nil, fmt.Errorf("check if file: %s is image error: %v", c.File, err)
+	}
+
+	// Get clip duration.
+	// Get start and end timestamps.
+	if c.Start == "" {
+		c.Start = "00:00:00"
+	}
+	if start, err = timestamp.New(c.Start); err != nil {
+		return nil, fmt.Errorf("new timestamp: %s error: %v", c.Start, err)
+	}
+
+	if c.End == "" {
+		mf, err := ffmpeg.Format(c.File)
+		if err != nil {
+			return nil, fmt.Errorf("get format of %s error: %v", c.File, err)
 		}
 
-		return nil, nil
-	*/
-	return nil, nil
+		// Use duration as end timestamp.
+		if end, err = timestamp.New(mf.Duration); err != nil {
+			return nil, fmt.Errorf("new timestamp: %s error: %v", mf.Duration, err)
+		}
+	} else {
+		if end, err = timestamp.New(c.End); err != nil {
+			return nil, fmt.Errorf("new timestamp: %s error: %v", c.End, err)
+		}
+	}
 
+	// Get clip duration.
+	if c.duration, err = end.Sub(start); err != nil {
+		return nil, fmt.Errorf("end.Sub(start) error: %v", err)
+	}
+
+	return c, nil
 }
 
 // TrimParams returns parameters(start / end) for "trim" / "atrim" filter.
+// It returns empty string when there's no need to trim(e.g. start == end).
 func TrimParams(start, end string) (string, error) {
 	if start == end {
-		return "", fmt.Errorf("start equals to end")
+		return "", nil
 	}
 
 	str := ""
@@ -74,52 +113,14 @@ func (c *Clip) TempSRTFile() string {
 	return f
 }
 
-func (c *Clip) Duration() (*timestamp.Timestamp, error) {
-	// Get start and end timestamps.
-	var (
-		err        error
-		start, end *timestamp.Timestamp
-	)
-
-	if c.Start == "" {
-		c.Start = "00:00:00"
-	}
-	if start, err = timestamp.New(c.Start); err != nil {
-		return nil, fmt.Errorf("new timestamp: %s error: %v", c.Start, err)
-	}
-
-	if c.End == "" {
-		mf, err := ffmpeg.Format(c.File)
-		if err != nil {
-			return nil, fmt.Errorf("get format of %s error: %v", c.File, err)
-		}
-
-		// Use duration as end timestamp.
-		if end, err = timestamp.New(mf.Duration); err != nil {
-			return nil, fmt.Errorf("new timestamp: %s error: %v", mf.Duration, err)
-		}
-	} else {
-		if end, err = timestamp.New(c.End); err != nil {
-			return nil, fmt.Errorf("new timestamp: %s error: %v", c.End, err)
-		}
-	}
-
-	// Get clip duration.
-	d, err := end.Sub(start)
-	if err != nil {
-		return nil, fmt.Errorf("end.Sub(start) error: %v", err)
-	}
-
-	return d, nil
+func (c *Clip) Duration() *timestamp.Timestamp {
+	return c.duration
 }
 
-func (c *Clip) WriteTempSRTFile(duration *timestamp.Timestamp) error {
+func (c *Clip) WriteTempSRTFile() error {
 	f := c.TempSRTFile()
 
-	d, err := c.Duration()
-	if err != nil {
-		return fmt.Errorf("get duration of %s error: %v", c.File, err)
-	}
+	d := c.Duration()
 
 	subs := []srt.Subtitle{
 		srt.Subtitle{
@@ -145,38 +146,32 @@ func (c *Clip) RemoveTempSRTFile() error {
 	return nil
 }
 
+func (c *Clip) InputArgs() []string {
+	var args []string
+
+	if c.isFromImage {
+		d := int(c.Duration().Second())
+		args = append(args, "-loop", "1", "-t", fmt.Sprintf("%d", d), "-i", c.File)
+	}
+
+	args = append(args, "-i", c.File)
+	return args
+}
+
 func (c *Clip) VideoFilterChain(w, h, fps int, styles ...srt.Style) (*ffmpeg.FilterChain, error) {
 	// Create the video filer chain.
-	vOutLabel := fmt.Sprintf("[clip_%d_v]", c.inputID)
+	vOutLabel := fmt.Sprintf("[v%d]", c.inputID)
 	v := ffmpeg.NewFilterChain(vOutLabel)
 
 	// Add input.
 	// "X:v:0" which X is the input ID.
 	v.AddInputByID(c.inputID, "v", 0)
 
-	// Get clip duration.
-	d, err := c.Duration()
-	if err != nil {
-		return nil, fmt.Errorf("get duration of %s error: %v", c.File, err)
-	}
-
-	// Check if input file is image.
-	isImage, err := ffmpeg.IsImage(c.File)
-	if err != nil {
-		return nil, fmt.Errorf("check if file: %s is image error: %v", c.File, err)
-	}
-
-	if isImage {
+	// fps for clip from image only.
+	if c.isFromImage {
 		// fps.
 		FPS := fmt.Sprintf("fps=%d", fps)
-
-		// loop.
-		loop := fmt.Sprintf("loop=loop=%d:size=1", int(d.Second())*fps)
-
-		// format.
-		format := "format=pix_fmts=yuv420p"
-
-		v.Chain(FPS).Chain(loop).Chain(format)
+		v.Chain(FPS)
 	}
 
 	// scale.
@@ -190,18 +185,29 @@ func (c *Clip) VideoFilterChain(w, h, fps int, styles ...srt.Style) (*ffmpeg.Fil
 
 	v.Chain(scale).Chain(pad).Chain(setsar)
 
-	// trim.
-	param, err := TrimParams(c.Start, c.End)
-	if err != nil {
-		return nil, fmt.Errorf("get trim params error: %v", err)
+	// format for clip from image only.
+	if c.isFromImage {
+		// format.
+		format := "format=yuv420p"
+		v.Chain(format)
+	} else {
+		// trim for video clip only.
+		// Get trim parameters.
+		param, err := TrimParams(c.Start, c.End)
+		if err != nil {
+			return nil, fmt.Errorf("get trim params error: %v", err)
+		}
+
+		// trim if parameters are not empty.
+		if param != "" {
+			trim := "trim=" + param
+			v.Chain(trim)
+
+			// setpts.
+			setpts := "setpts=PTS-STARTPTS"
+			v.Chain(setpts)
+		}
 	}
-
-	trim := "trim=" + param
-	v.Chain(trim)
-
-	// setpts.
-	setpts := "setpts=PTS-STARTPTS"
-	v.Chain(setpts)
 
 	// subtitles.
 	if c.Subtitle != "" {
@@ -216,30 +222,127 @@ func (c *Clip) VideoFilterChain(w, h, fps int, styles ...srt.Style) (*ffmpeg.Fil
 }
 
 func (c *Clip) AudioFilterChain() (*ffmpeg.FilterChain, error) {
-	if c.IsMuted {
-		return nil, nil
-	}
-
 	// Create the audio filter chain.
-	aOutLabel := fmt.Sprintf("[clip_%d_a]", c.inputID)
+	aOutLabel := fmt.Sprintf("[a%d]", c.inputID)
 	a := ffmpeg.NewFilterChain(aOutLabel)
 
-	// Add input.
-	// "X:a:0" which X is the input ID.
-	a.AddInputByID(c.inputID, "a", 0)
+	// aevalsrc to generate silence for clip from image or muted clip only.
+	if c.isFromImage || c.IsMuted {
+		// aevalsrc.
+		d := int(c.Duration().Second())
+		aevalsrc := fmt.Sprintf("aevalsrc=0:c=stereo:s=48000:d=%d", d)
+		a.Chain(aevalsrc)
+	} else {
+		// Add input.
+		// "X:a:0" which X is the input ID.
+		a.AddInputByID(c.inputID, "a", 0)
 
-	// atrim.
-	param, err := TrimParams(c.Start, c.End)
-	if err != nil {
-		return nil, fmt.Errorf("get trim params error: %v", err)
+		// atrim.
+		// Get atrim parameters.
+		param, err := TrimParams(c.Start, c.End)
+		if err != nil {
+			return nil, fmt.Errorf("get trim params error: %v", err)
+		}
+
+		// atrim if parameters are not empty.
+		if param != "" {
+			atrim := "atrim=" + param
+			a.Chain(atrim)
+
+			// asetpts.
+			asetpts := "asetpts=PTS-STARTPTS"
+			a.Chain(asetpts)
+		}
 	}
 
-	atrim := "atrim=" + param
-	a.Chain(atrim)
-
-	// asetpts.
-	asetpts := "asetpts=PTS-STARTPTS"
-	a.Chain(asetpts)
-
 	return a, nil
+}
+
+func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) ([]string, error) {
+	var (
+		args    []string
+		clips   []*Clip
+		inputs  []string
+		vChains []*ffmpeg.FilterChain
+		aChains []*ffmpeg.FilterChain
+	)
+
+	// Create a filter graph.
+	fg := ffmpeg.NewFilterGraph()
+
+	// Create a filter chain used for concat filter.
+	fc := ffmpeg.NewFilterChain("[outv]", "[outa]")
+
+	for i, data := range datas {
+		c, err := NewClip(i, data)
+		if err != nil {
+			return nil, fmt.Errorf("new clip: %v error: %v", data, err)
+		}
+		clips = append(clips, c)
+
+		// Get ffmpeg input.
+		inputs = append(inputs, c.InputArgs()...)
+
+		// Get video filter chain.
+		v, err := c.VideoFilterChain(w, h, fps, styles...)
+		if err != nil {
+			return nil, fmt.Errorf("get video filter chain of %v error: %v", c.ClipData, err)
+		}
+
+		vChains = append(vChains, v)
+		// Add video chain's output as concat filter chain's input.
+		fc.AddInput(v.Output(0))
+
+		// Get audio filter chain.
+		a, err := c.AudioFilterChain()
+		if err != nil {
+			return nil, fmt.Errorf("get audio filter chain of %v error: %v", c.ClipData, err)
+		}
+
+		aChains = append(aChains, a)
+		// Add audio chain's output as concat filter chain's input.
+		fc.AddInput(a.Output(0))
+	}
+
+	// Add ffmpeg inputs.
+	args = append(args, inputs...)
+
+	// Add concat filter.
+	concat := fmt.Sprintf("concat=n=%d:v=1:a=1", len(clips))
+	fc.Chain(concat)
+
+	// Add filter graph's args.
+	fg.Append(vChains...)
+	fg.Append(aChains...)
+	fg.Append(fc)
+
+	args = append(args, fg.Args()...)
+
+	// Add outputs.
+	// Get filter graph's outputs(last filter chain: concat filter chain's outputs)
+	outputs := fg.Outputs()
+
+	for _, output := range outputs {
+		args = append(args, "-map", output)
+	}
+
+	// Video encoder.
+	args = append(args, "-c:v", "libx264")
+
+	// Audio encoder.
+	args = append(args, "-c:a", "aac")
+
+	// Output.
+	args = append(args, output)
+
+	return args, nil
+}
+
+func ConcatCommand(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) (*exec.Cmd, error) {
+	args, err := concatCommandArgs(datas, output, w, h, fps, isRankMode, styles...)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.Command("ffmpeg", args...), nil
 }
