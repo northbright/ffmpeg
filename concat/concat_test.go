@@ -7,6 +7,7 @@ import (
 )
 
 func ExampleConcatCommand() {
+
 	datas := []concat.ClipData{
 		concat.ClipData{
 			File:     "../images/op.jpg",
@@ -57,7 +58,7 @@ func ExampleConcatCommand() {
 	fps := 30
 	output := "../output/good-times-with-maomi-and-mimao.mp4"
 
-	cmd, err := concat.ConcatCommand(datas, output, w, h, fps, false)
+	cmd, pre, _, err := concat.ConcatCommand(datas, output, w, h, fps, false)
 	if err != nil {
 		log.Printf("concat.ConcatCommand() error: %v", err)
 		return
@@ -66,12 +67,20 @@ func ExampleConcatCommand() {
 	log.Printf("concat.ConcatCommand() OK.")
 	log.Printf("command:\n%s\n", cmd.String())
 
+	// Run pre func.
+	if err := pre(); err != nil {
+		log.Printf("pre error: %v", err)
+		return
+	}
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("cmd.CombinedOutput() error: %v\nout:\n%s\n", err, string(out))
 	}
 
 	log.Printf("cmd.CombinedOutput() OK.\nout:\n%s\n", string(out))
+	// Run post func.
+	//post()
 
 	// Output:
 }

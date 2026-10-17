@@ -2,6 +2,7 @@ package concat
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -98,7 +99,7 @@ func TrimParams(start, end string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("create end timestamp for %s error: %v", end, err)
 		}
-		str += fmt.Sprintf("end=%s:", tsEnd.SecondStr())
+		str += fmt.Sprintf("end=%s", tsEnd.SecondStr())
 	} else {
 		str = strings.TrimSuffix(str, ":")
 	}
@@ -126,6 +127,7 @@ func (c *Clip) WriteTempSRTFile() error {
 		srt.Subtitle{
 			Start: "00:00:00,000",
 			End:   d.StringForSRT(),
+			//Text:  c.Subtitle,
 		},
 	}
 
@@ -152,9 +154,9 @@ func (c *Clip) InputArgs() []string {
 	if c.isFromImage {
 		d := int(c.Duration().Second())
 		args = append(args, "-loop", "1", "-t", fmt.Sprintf("%d", d), "-i", c.File)
+	} else {
+		args = append(args, "-i", c.File)
 	}
-
-	args = append(args, "-i", c.File)
 	return args
 }
 
@@ -258,9 +260,11 @@ func (c *Clip) AudioFilterChain() (*ffmpeg.FilterChain, error) {
 	return a, nil
 }
 
-func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) ([]string, error) {
+type PreFunc func() error
+type PostFunc func() error
+
+func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) (args []string, pre PreFunc, post PostFunc, err error) {
 	var (
-		args    []string
 		clips   []*Clip
 		inputs  []string
 		vChains []*ffmpeg.FilterChain
@@ -276,7 +280,7 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 	for i, data := range datas {
 		c, err := NewClip(i, data)
 		if err != nil {
-			return nil, fmt.Errorf("new clip: %v error: %v", data, err)
+			return nil, nil, nil, fmt.Errorf("new clip: %v error: %v", data, err)
 		}
 		clips = append(clips, c)
 
@@ -286,7 +290,7 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 		// Get video filter chain.
 		v, err := c.VideoFilterChain(w, h, fps, styles...)
 		if err != nil {
-			return nil, fmt.Errorf("get video filter chain of %v error: %v", c.ClipData, err)
+			return nil, nil, nil, fmt.Errorf("get video filter chain of %v error: %v", c.ClipData, err)
 		}
 
 		vChains = append(vChains, v)
@@ -296,7 +300,7 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 		// Get audio filter chain.
 		a, err := c.AudioFilterChain()
 		if err != nil {
-			return nil, fmt.Errorf("get audio filter chain of %v error: %v", c.ClipData, err)
+			return nil, nil, nil, fmt.Errorf("get audio filter chain of %v error: %v", c.ClipData, err)
 		}
 
 		aChains = append(aChains, a)
@@ -335,14 +339,41 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 	// Output.
 	args = append(args, output)
 
-	return args, nil
-}
-
-func ConcatCommand(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) (*exec.Cmd, error) {
-	args, err := concatCommandArgs(datas, output, w, h, fps, isRankMode, styles...)
-	if err != nil {
-		return nil, err
+	// Pre func
+	pre = func() error {
+		for _, c := range clips {
+			//if c.Subtitle != "" {
+			if err := c.WriteTempSRTFile(); err != nil {
+				log.Printf("WriteTempSRTFile for %s error: %v", c.File, err)
+				return err
+			}
+			//}
+		}
+		return nil
 	}
 
-	return exec.Command("ffmpeg", args...), nil
+	// Post func
+	post = func() error {
+		for _, c := range clips {
+			//if c.Subtitle != "" {
+			if err := c.RemoveTempSRTFile(); err != nil {
+				log.Printf("RemoveTempSRTFile for %s error: %v", c.File, err)
+				return err
+			}
+			//}
+		}
+		return nil
+	}
+
+	return args, pre, post, nil
+}
+
+func ConcatCommand(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) (cmd *exec.Cmd, pre PreFunc, post PostFunc, err error) {
+	var args []string
+	args, pre, post, err = concatCommandArgs(datas, output, w, h, fps, isRankMode, styles...)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return exec.Command("ffmpeg", args...), pre, post, nil
 }

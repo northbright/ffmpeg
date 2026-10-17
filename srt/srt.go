@@ -37,6 +37,9 @@ func WriteFile(srtFile string, subtitles []Subtitle) error {
 
 	content := ""
 	for i, s := range subtitles {
+		if s.Text == "" {
+			return fmt.Errorf("empty subtitle text")
+		}
 		content += fmt.Sprintf("%d\n%s --> %s\n%s\n\n", i+1, s.Start, s.End, s.Text)
 	}
 

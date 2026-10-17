@@ -36,13 +36,15 @@ func (fg *FilterGraph) Args() []string {
 
 	args = append(args, "-filter_complex")
 
+	str := ""
 	for i, fc := range fg.chains {
-		str := fc.String()
+		str += fc.String()
 		if i != l-1 {
-			str += ";\n"
+			str += ";"
 		}
-		args = append(args, str)
 	}
+
+	args = append(args, str)
 
 	return args
 }
