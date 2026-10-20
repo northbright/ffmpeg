@@ -14,15 +14,13 @@ import (
 )
 
 type ClipData struct {
-	File             string `json:"file"`
-	Start            string `json:"start"`
-	End              string `json:"end"`
-	Subtitle         string `json:"subtitle"`
-	IsMuted          bool   `json:"is_muted,omitempty"`
-	FadeInDuration   int    `json:"fade_in_duration,omitempty"`
-	FadeOutDuration  int    `json:"fade_out_duration,omitempty"`
-	AFadeInDuration  int    `json:"afade_in_duration,omitempty"`
-	AFadeOutDuration int    `json:"afade_out_duration,omitempty"`
+	File            string `json:"file"`
+	Start           string `json:"start"`
+	End             string `json:"end"`
+	Subtitle        string `json:"subtitle"`
+	IsMuted         bool   `json:"is_muted,omitempty"`
+	FadeInDuration  int    `json:"fade_in_duration,omitempty"`
+	FadeOutDuration int    `json:"fade_out_duration,omitempty"`
 }
 
 type Clip struct {
