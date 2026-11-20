@@ -53,12 +53,16 @@ func ExampleConcatCommand() {
 		},
 	}
 
+	bgms := []string{
+		"../audios/penguinmusic-Better Day.mp3",
+	}
+
 	w := 1920
 	h := 1080
 	fps := 30
 	output := "../output/good-times-with-maomi-and-mimao.mp4"
 
-	cmd, pre, _, err := concat.ConcatCommand(datas, output, w, h, fps, false, true)
+	cmd, pre, _, err := concat.ConcatCommand(datas, bgms, output, w, h, fps, false, true)
 	if err != nil {
 		log.Printf("concat.ConcatCommand() error: %v", err)
 		return

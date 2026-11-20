@@ -259,7 +259,7 @@ func (c *Clip) AudioFilterChain() (*ffmpeg.FilterChain, error) {
 type PreFunc func() error
 type PostFunc func() error
 
-func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMode bool, overwrite bool, styles ...srt.Style) (args []string, pre PreFunc, post PostFunc, err error) {
+func concatCommandArgs(datas []ClipData, bgms []string, output string, w, h, fps int, isRankMode bool, overwrite bool, styles ...srt.Style) (args []string, pre PreFunc, post PostFunc, err error) {
 	var (
 		clips   []*Clip
 		inputs  []string
@@ -305,10 +305,39 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 	}
 
 	// Add ffmpeg inputs.
+	// 1. Video inputs.
 	args = append(args, inputs...)
 
+	// 2. Audio inputs(BGMs).
+	clipNum := len(clips)
+	bgmNum := len(bgms)
+	var bgmFC *ffmpeg.FilterChain
+
+	switch bgmNum {
+	case 0:
+	case 1:
+		bgmFC = ffmpeg.NewFilterChain("[bgm]")
+		// Audio input ID = number of clip inputs.
+		id := clipNum
+		args = append(args, "-i", bgms[0])
+		bgmFC.AddInputByID(id, "a", 0)
+	default:
+		bgmFC = ffmpeg.NewFilterChain("[bgm]")
+
+		for i, bgm := range bgms {
+			// Audio input ID = number of clip inputs + i.
+			id := clipNum + i
+			args = append(args, "-i", bgm)
+			bgmFC.AddInputByID(id, "a", 0)
+		}
+
+		// Concat multiple BGMs to one.
+		bgmConcat := fmt.Sprintf("concat=n=%d:v=0:a=1", bgmNum)
+		bgmFC.Chain(bgmConcat)
+	}
+
 	// Add concat filter.
-	concat := fmt.Sprintf("concat=n=%d:v=1:a=1", len(clips))
+	concat := fmt.Sprintf("concat=n=%d:v=1:a=1", clipNum)
 	fc.Chain(concat)
 
 	// Add filter graph's args.
@@ -316,14 +345,41 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 	fg.Append(aChains...)
 	fg.Append(fc)
 
+	var amergeFC *ffmpeg.FilterChain
+
+	if bgmFC != nil {
+		amergeFC = ffmpeg.NewFilterChain("[merged_a]")
+		// Add BGM filterchain's output as first input.
+		amergeFC.AddInputByOutput(bgmFC, 0)
+		// Add concat filterchain's audio output as second input.
+		amergeFC.AddInputByOutput(fc, 1)
+
+		// Create amerge filter.
+		amerge := "amerge=inputs=2"
+
+		// Create pan filter.
+		pan := "pan=stereo|c0<c0+c2|c1<c1+c3"
+
+		// Chain filters.
+		amergeFC.Chain(amerge).Chain(pan)
+
+		// Add merge BGM filterchain to filtergraph.
+		fg.Append(amergeFC)
+	}
+
 	args = append(args, fg.Args()...)
 
-	// Add outputs.
-	// Get filter graph's outputs(last filter chain: concat filter chain's outputs)
-	outputs := fg.Outputs()
+	// Map outputs.
+	// 1. Map concat filterchain's video output.
+	args = append(args, "-map", fc.Output(0))
 
-	for _, output := range outputs {
-		args = append(args, "-map", output)
+	// 2. Map audio output
+	if amergeFC != nil {
+		// Map amerge filterchain's output(merge concat / bgm filterchain's audio outputs).
+		args = append(args, "-map", amergeFC.Output(0))
+	} else {
+		// Map concat filterchain's audio output.
+		args = append(args, "-map", fc.Output(1))
 	}
 
 	// Video encoder.
@@ -369,9 +425,9 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 	return args, pre, post, nil
 }
 
-func ConcatCommand(datas []ClipData, output string, w, h, fps int, isRankMode bool, overwrite bool, styles ...srt.Style) (cmd *exec.Cmd, pre PreFunc, post PostFunc, err error) {
+func ConcatCommand(datas []ClipData, bgms []string, output string, w, h, fps int, isRankMode bool, overwrite bool, styles ...srt.Style) (cmd *exec.Cmd, pre PreFunc, post PostFunc, err error) {
 	var args []string
-	args, pre, post, err = concatCommandArgs(datas, output, w, h, fps, isRankMode, overwrite, styles...)
+	args, pre, post, err = concatCommandArgs(datas, bgms, output, w, h, fps, isRankMode, overwrite, styles...)
 	if err != nil {
 		return nil, nil, nil, err
 	}
