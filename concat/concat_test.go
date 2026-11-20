@@ -58,7 +58,7 @@ func ExampleConcatCommand() {
 	fps := 30
 	output := "../output/good-times-with-maomi-and-mimao.mp4"
 
-	cmd, pre, _, err := concat.ConcatCommand(datas, output, w, h, fps, false)
+	cmd, pre, _, err := concat.ConcatCommand(datas, output, w, h, fps, false, true)
 	if err != nil {
 		log.Printf("concat.ConcatCommand() error: %v", err)
 		return

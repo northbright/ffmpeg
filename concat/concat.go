@@ -14,13 +14,11 @@ import (
 )
 
 type ClipData struct {
-	File            string `json:"file"`
-	Start           string `json:"start"`
-	End             string `json:"end"`
-	Subtitle        string `json:"subtitle"`
-	IsMuted         bool   `json:"is_muted,omitempty"`
-	FadeInDuration  int    `json:"fade_in_duration,omitempty"`
-	FadeOutDuration int    `json:"fade_out_duration,omitempty"`
+	File     string `json:"file"`
+	Start    string `json:"start"`
+	End      string `json:"end"`
+	Subtitle string `json:"subtitle"`
+	IsMuted  bool   `json:"is_muted,omitempty"`
 }
 
 type Clip struct {
@@ -125,7 +123,7 @@ func (c *Clip) WriteTempSRTFile() error {
 		srt.Subtitle{
 			Start: "00:00:00,000",
 			End:   d.StringForSRT(),
-			//Text:  c.Subtitle,
+			Text:  c.Subtitle,
 		},
 	}
 
@@ -261,7 +259,7 @@ func (c *Clip) AudioFilterChain() (*ffmpeg.FilterChain, error) {
 type PreFunc func() error
 type PostFunc func() error
 
-func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) (args []string, pre PreFunc, post PostFunc, err error) {
+func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMode bool, overwrite bool, styles ...srt.Style) (args []string, pre PreFunc, post PostFunc, err error) {
 	var (
 		clips   []*Clip
 		inputs  []string
@@ -337,12 +335,17 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 	// Output.
 	args = append(args, output)
 
+	// Overwrite.
+	if overwrite {
+		args = append(args, "-y")
+	}
+
 	// Pre func
 	pre = func() error {
 		for _, c := range clips {
 			//if c.Subtitle != "" {
 			if err := c.WriteTempSRTFile(); err != nil {
-				log.Printf("WriteTempSRTFile for %s error: %v", c.File, err)
+				log.Printf("WriteTempSRTFile for %v error: %v", c, err)
 				return err
 			}
 			//}
@@ -355,7 +358,7 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 		for _, c := range clips {
 			//if c.Subtitle != "" {
 			if err := c.RemoveTempSRTFile(); err != nil {
-				log.Printf("RemoveTempSRTFile for %s error: %v", c.File, err)
+				log.Printf("RemoveTempSRTFile for %v error: %v", c, err)
 				return err
 			}
 			//}
@@ -366,9 +369,9 @@ func concatCommandArgs(datas []ClipData, output string, w, h, fps int, isRankMod
 	return args, pre, post, nil
 }
 
-func ConcatCommand(datas []ClipData, output string, w, h, fps int, isRankMode bool, styles ...srt.Style) (cmd *exec.Cmd, pre PreFunc, post PostFunc, err error) {
+func ConcatCommand(datas []ClipData, output string, w, h, fps int, isRankMode bool, overwrite bool, styles ...srt.Style) (cmd *exec.Cmd, pre PreFunc, post PostFunc, err error) {
 	var args []string
-	args, pre, post, err = concatCommandArgs(datas, output, w, h, fps, isRankMode, styles...)
+	args, pre, post, err = concatCommandArgs(datas, output, w, h, fps, isRankMode, overwrite, styles...)
 	if err != nil {
 		return nil, nil, nil, err
 	}
